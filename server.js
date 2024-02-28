@@ -15,7 +15,6 @@ app.use('/api/auth', authRoutes);
 app.use('/validate', validationRoutes);
 app.use((req, res ,next) => next(new ApiError(404, 'Route not found.')))
 
-// Подключаем middleware для обработки ошибок
 app.use(errorMiddleware);
 
 app.listen(PORT, () => {

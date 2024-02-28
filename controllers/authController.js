@@ -95,7 +95,7 @@ const refreshToken = (req, res, next) => {
 };
 
 const getMe = (req, res, next) => {
-  res.send('Hello, World!');
+  res.send('authentification successful!');
 }
 
 module.exports = {
