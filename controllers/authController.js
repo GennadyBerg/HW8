@@ -1,11 +1,14 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const config = require('../config.json');
-const Joi = require('joi');
-const { error } = require('console');
 const { ApiError } = require('../middleware/ApiError');
 
 const users = [];
+
+const findUser = (id, name) => 
+  users.find(user => user.id === id && user.username === name);
+const findUserByName = (name) => 
+  users.find(user => user.username === name);
 
 const signup = (req, res, next) => {
   const { username, email, password } = req.body;
@@ -16,7 +19,7 @@ const signup = (req, res, next) => {
 
   const hashedPassword = bcrypt.hashSync(password, 10);
 
-  users.push({ username, email, password: hashedPassword });
+  users.push({ id: users.length + 1, username, email, password: hashedPassword });
 
   return res.status(201).json({ message: 'Registration successful' });
 };
@@ -25,7 +28,7 @@ const signin = (req, res, next) => {
 
   const { username, password } = req.body;
 
-  const user = users.find(user => user.username === username);
+  const user = findUserByName(username);
   console.log(user);
 
   if (!user || !bcrypt.compareSync(password, user.password)) {
@@ -34,10 +37,10 @@ const signin = (req, res, next) => {
   }
 
   const accessToken = jwt.sign(
-    { name: username }, config.env.JWT_SECRET, { expiresIn: config.env.tokenExpiration });
+    { id: user.id, name: user.username }, config.env.JWT_SECRET, { expiresIn: config.env.tokenExpiration });
 
   const refreshToken = jwt.sign(
-    { name: user.username }, config.env.JWT_REFRESH_SECRET);
+    { id: user.id, name: user.username }, config.env.JWT_REFRESH_SECRET);
 
   user.refreshToken = refreshToken;
 
@@ -45,7 +48,7 @@ const signin = (req, res, next) => {
 };
 
 const refreshToken = (req, res, next) => {
-  const { username } = req.body;
+  const { userid, username } = req.body;
   let refreshToken = req.headers["authorization"];
 
   if (refreshToken)
@@ -56,7 +59,7 @@ const refreshToken = (req, res, next) => {
       return next (error);
   }
 
-  const user = users.find(user => user.username === username);
+  const user = findUser(userid, username);
 
   if (!user) {
       const error = new ApiError(400, "Request format problem.")
@@ -69,16 +72,16 @@ const refreshToken = (req, res, next) => {
   }
 
   try {
-    const { name } = jwt.verify(refreshToken, config.env.JWT_REFRESH_SECRET);
+    const { id, name } = jwt.verify(refreshToken, config.env.JWT_REFRESH_SECRET);
 
     console.log(name);
 
-    if (username !== name) {
+    if (username !== name || userid !== id) {
       throw new ApiError(400, "Token format problem.");
     }
 
     const accessToken = jwt.sign(
-      { name: username }, config.env.JWT_SECRET, { expiresIn: config.env.tokenExpiration });
+      { id: user.id, name: user.username }, config.env.JWT_SECRET, { expiresIn: config.env.tokenExpiration });
 
     console.log(accessToken);
 
@@ -91,8 +94,14 @@ const refreshToken = (req, res, next) => {
   }
 };
 
+const getMe = (req, res, next) => {
+  res.send('Hello, World!');
+}
+
 module.exports = {
   signup,
   signin,
   refreshToken,
+  getMe,
+  findUser
 };
