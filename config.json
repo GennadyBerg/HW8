@@ -1,0 +1,7 @@
+{
+  "env": {
+    "JWT_SECRET": "v_lesu_rodilas_elochka",
+    "JWT_REFRESH_SECRET": "v_lesu_pere_rodilas_elochka",
+    "tokenExpiration": "1h"
+  }
+}
